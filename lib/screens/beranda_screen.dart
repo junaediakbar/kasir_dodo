@@ -96,8 +96,9 @@ class _BerandaScreenState extends State<BerandaScreen> {
         future: _future,
         builder: (context, snap) {
           final h = snap.data;
-          if (h == null)
+          if (h == null) {
             return const Center(child: CircularProgressIndicator());
+          }
           final r = h.report;
           final now = DateTime.now();
           return RefreshIndicator(
