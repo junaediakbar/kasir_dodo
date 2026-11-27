@@ -9,6 +9,7 @@ import '../data/ai_key.dart';
 import '../data/ai_scan.dart';
 import '../data/repo.dart';
 import '../theme.dart';
+import 'ui.dart';
 
 /// Alur Scan AI (F-08): foto → DeepSeek → masuk keranjang / pilih saran / tidak dikenali.
 Future<void> runAiScan(
@@ -34,19 +35,34 @@ Future<void> runAiScan(
 
   final source = await showModalBottomSheet<ImageSource>(
     context: context,
+    showDragHandle: true,
     builder: (ctx) => SafeArea(
-      child: Wrap(children: [
-        ListTile(
-          leading: const Icon(Icons.photo_camera),
-          title: const Text('Ambil foto'),
-          onTap: () => Navigator.pop(ctx, ImageSource.camera),
-        ),
-        ListTile(
-          leading: const Icon(Icons.photo_library),
-          title: const Text('Pilih dari galeri'),
-          onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-        ),
-      ]),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SectionLabel('Scan AI · ambil gambar produk'),
+          Row(children: [
+            for (final (src, icon, label) in [
+              (ImageSource.camera, Icons.photo_camera_outlined, 'Ambil foto'),
+              (ImageSource.gallery, Icons.photo_library_outlined, 'Pilih dari galeri'),
+            ]) ...[
+              Expanded(
+                child: Panel(
+                  color: kSurfaceLow,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  onTap: () => Navigator.pop(ctx, src),
+                  child: Column(children: [
+                    Icon(icon, color: kPrimaryDark, size: 28),
+                    const SizedBox(height: 6),
+                    Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              ),
+              if (src == ImageSource.camera) const SizedBox(width: 12),
+            ],
+          ]),
+        ]),
+      ),
     ),
   );
   if (source == null) return;
@@ -122,39 +138,66 @@ Future<void> runAiScan(
     case ScanAction.suggest:
       await showModalBottomSheet<void>(
         context: context,
+        showDragHandle: true,
         builder: (ctx) => SafeArea(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const ListTile(title: Text('Produk mirip, pilih salah satu')),
-            for (final m in matches)
-              ListTile(
-                title: Text(byId[m.productId]!['name'] as String),
-                trailing: Text('${(m.confidence * 100).round()}%'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  addMatch(m);
-                },
-              ),
-          ]),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  iconTile(Icons.auto_fix_high, size: 28),
+                  const SizedBox(width: 8),
+                  Text('KOREKSI SCAN AI',
+                      style: mono(11, weight: FontWeight.w700, color: kPrimaryDark)),
+                ]),
+                const SizedBox(height: 8),
+                Text('Pilih produk yang benar',
+                    style: Theme.of(ctx).textTheme.headlineSmall),
+                Text('AI belum yakin. Ketuk salah satu untuk masuk keranjang.',
+                    style: Theme.of(ctx).textTheme.bodySmall),
+                const SizedBox(height: 12),
+                for (final m in matches) ...[
+                  Panel(
+                    padding: const EdgeInsets.all(8),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      addMatch(m);
+                    },
+                    child: Row(children: [
+                      productThumb(byId[m.productId]!),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(byId[m.productId]!['name'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          Money(byId[m.productId]!['sell_price'] as int,
+                              size: 12, color: kPrimaryDark),
+                        ]),
+                      ),
+                      pill('${(m.confidence * 100).round()}%',
+                          fg: m.confidence >= .6 ? kOnMintSoft : kAmberDark,
+                          bg: m.confidence >= .6 ? kMintSoft : kAmberSoft),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.add_circle_outline, color: kPrimary),
+                    ]),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Batal, cari manual'),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     case ScanAction.unknown:
       msg('Produk tidak dikenali. Cari manual.');
   }
-}
-
-/// Tombol kecil untuk membuka Scan AI dari layar kasir.
-class ScanAiButton extends StatelessWidget {
-  const ScanAiButton({super.key, required this.onPressed});
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: kPrimary,
-          minimumSize: const Size.fromHeight(48),
-        ),
-        onPressed: onPressed,
-        icon: const Icon(Icons.auto_awesome),
-        label: const Text('Scan AI'),
-      );
 }
