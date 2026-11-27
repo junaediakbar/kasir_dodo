@@ -47,9 +47,9 @@ void main() {
     await tester.pumpAndSettle();
     final pf = find.byType(TextFormField);
     await tester.enterText(pf.at(0), 'Teh Botol');
-    await tester.enterText(pf.at(1), '5000');
-    await tester.enterText(pf.at(2), '3500');
-    await tester.enterText(pf.at(5), '10');
+    await tester.enterText(pf.at(3), '5000'); // harga jual
+    await tester.enterText(pf.at(2), '3500'); // modal
+    await tester.enterText(pf.at(5), '10'); // stok awal
     await tester.tap(find.text('Simpan'));
     await tester.pumpAndSettle();
     expect(find.text('Teh Botol'), findsOneWidget);

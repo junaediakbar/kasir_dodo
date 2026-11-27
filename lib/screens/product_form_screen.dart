@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/money.dart';
 import '../data/repo.dart';
+import '../theme.dart';
 
 /// Tambah atau ubah produk. Stok awal hanya saat tambah; ubah stok di tab Stok.
 class ProductFormScreen extends StatefulWidget {
@@ -141,17 +142,74 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   String? _required(String? v) => (v ?? '').trim().isEmpty ? 'Wajib diisi' : null;
 
+  Widget _section(IconData icon, String title, List<Widget> children) => Panel(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            iconTile(icon, size: 32),
+            const SizedBox(width: 10),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+          ]),
+          const SizedBox(height: 14),
+          for (final (i, c) in children.indexed) ...[
+            if (i > 0) const SizedBox(height: 12),
+            c,
+          ],
+        ]),
+      );
+
+  Widget _margin() {
+    final sell = parseRupiah(_sell.text), cost = parseRupiah(_cost.text);
+    if (sell <= 0) return const SizedBox.shrink();
+    final profit = sell - cost;
+    final pct = (profit * 100 / sell).round();
+    final ok = profit > 0;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          color: ok ? const Color(0xFFE6F7EF) : kRedSoft,
+          borderRadius: BorderRadius.circular(4)),
+      child: Row(children: [
+        Icon(ok ? Icons.trending_up : Icons.trending_down,
+            size: 18, color: ok ? kPrimaryDark : kRed),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(ok ? 'Laba per ${_unit.text.trim().isEmpty ? 'unit' : _unit.text.trim()}' : 'Harga jual di bawah modal',
+              style: TextStyle(
+                  fontWeight: FontWeight.w600, color: ok ? kPrimaryDark : kRed)),
+        ),
+        Money(profit, size: 13, color: ok ? kPrimaryDark : kRed),
+        const SizedBox(width: 6),
+        pill('$pct%', fg: ok ? kOnMintSoft : kRed, bg: ok ? kMintSoft : Colors.white),
+      ]),
+    );
+  }
+
+  InputDecoration _dec(String label, {String? hint, String? prefix}) => InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixText: prefix,
+        prefixStyle: mono(14, color: kInkSoft),
+      );
+
   @override
   Widget build(BuildContext context) {
     if (_isEdit && !_loaded) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    final money = mono(15, weight: FontWeight.w700);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdit ? 'Ubah produk' : 'Produk baru'),
+        title: Text(_isEdit ? 'Ubah Produk' : 'Tambah Produk Baru'),
         actions: [
           if (_isEdit)
-            IconButton(icon: const Icon(Icons.archive_outlined), onPressed: _archive),
+            TextButton.icon(
+              onPressed: _archive,
+              icon: const Icon(Icons.archive_outlined),
+              label: const Text('Arsipkan'),
+              style: TextButton.styleFrom(foregroundColor: kRed),
+            ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Form(
@@ -159,89 +217,128 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-              controller: _name,
-              decoration: const InputDecoration(labelText: 'Nama produk'),
-              validator: _required,
-            ),
+            _section(Icons.inventory_2_outlined, 'Informasi Dasar Produk', [
+              TextFormField(
+                controller: _name,
+                decoration: _dec('Nama produk', hint: 'mis. Indomie Goreng Spesial'),
+                validator: _required,
+              ),
+              FutureBuilder<List<Map<String, Object?>>>(
+                future: widget.repo.categories(),
+                builder: (context, snap) {
+                  final cats = snap.data ?? const [];
+                  return Row(children: [
+                    Expanded(
+                      child: DropdownButtonFormField<int?>(
+                        initialValue:
+                            cats.any((c) => c['id'] == _categoryId) ? _categoryId : null,
+                        decoration: _dec('Kategori'),
+                        items: [
+                          const DropdownMenuItem<int?>(
+                              value: null, child: Text('Tanpa kategori')),
+                          for (final c in cats)
+                            DropdownMenuItem<int?>(
+                                value: c['id'] as int, child: Text(c['name'] as String)),
+                        ],
+                        onChanged: (v) => setState(() => _categoryId = v),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox.square(
+                      dimension: 52,
+                      child: OutlinedButton(
+                        onPressed: _addCategory,
+                        style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+                        child: const Icon(Icons.add, semanticLabel: 'Kategori baru'),
+                      ),
+                    ),
+                  ]);
+                },
+              ),
+              TextFormField(
+                controller: _barcode,
+                style: mono(14),
+                decoration: _dec('Barcode EAN/UPC (opsional)').copyWith(
+                    prefixIcon: const Icon(Icons.qr_code_scanner)),
+              ),
+            ]),
             const SizedBox(height: 12),
-            FutureBuilder<List<Map<String, Object?>>>(
-              future: widget.repo.categories(),
-              builder: (context, snap) {
-                final cats = snap.data ?? const [];
-                return Row(children: [
+            _section(Icons.sell_outlined, 'Harga & Margin', [
+              Row(children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _cost,
+                    keyboardType: TextInputType.number,
+                    style: money,
+                    decoration: _dec('Modal (HPP)', prefix: 'Rp '),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _sell,
+                    keyboardType: TextInputType.number,
+                    style: money,
+                    decoration: _dec('Harga jual', prefix: 'Rp '),
+                    validator: _required,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ]),
+              TextFormField(
+                controller: _unit,
+                decoration: _dec('Satuan jual', hint: 'pcs, bks, kg, botol'),
+                validator: _required,
+                onChanged: (_) => setState(() {}),
+              ),
+              _margin(),
+            ]),
+            const SizedBox(height: 12),
+            _section(Icons.warehouse_outlined, 'Inventaris & Pengingat Restok', [
+              Row(children: [
+                if (!_isEdit) ...[
                   Expanded(
-                    child: DropdownButtonFormField<int?>(
-                      initialValue: cats.any((c) => c['id'] == _categoryId) ? _categoryId : null,
-                      decoration: const InputDecoration(labelText: 'Kategori'),
-                      items: [
-                        const DropdownMenuItem<int?>(value: null, child: Text('Tanpa kategori')),
-                        for (final c in cats)
-                          DropdownMenuItem<int?>(
-                              value: c['id'] as int, child: Text(c['name'] as String)),
-                      ],
-                      onChanged: (v) => setState(() => _categoryId = v),
+                    child: TextFormField(
+                      controller: _stock,
+                      keyboardType: TextInputType.number,
+                      style: money,
+                      decoration: _dec('Stok awal'),
                     ),
                   ),
-                  IconButton(icon: const Icon(Icons.add), onPressed: _addCategory),
-                ]);
-              },
-            ),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _sell,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Harga jual (Rp)'),
-                  validator: _required,
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: TextFormField(
+                    controller: _minStock,
+                    keyboardType: TextInputType.number,
+                    style: money,
+                    decoration: _dec('Batas stok minimum'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _cost,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Harga modal (Rp)'),
+              ]),
+              Row(children: [
+                const Icon(Icons.notifications_active_outlined, size: 16, color: kAmberDark),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _isEdit
+                        ? 'Ubah jumlah stok lewat tab Stok agar tercatat di kartu stok.'
+                        : 'Produk masuk Pengingat Stok saat stok ≤ batas minimum.',
+                    style: const TextStyle(fontSize: 12, color: kInkSoft),
+                  ),
                 ),
-              ),
+              ]),
             ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _unit,
-                  decoration: const InputDecoration(labelText: 'Satuan'),
-                  validator: _required,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _minStock,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Batas stok min'),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 12),
-            if (!_isEdit)
-              TextFormField(
-                controller: _stock,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Stok awal'),
-              ),
-            if (!_isEdit) const SizedBox(height: 12),
-            TextFormField(
-              controller: _barcode,
-              decoration: const InputDecoration(labelText: 'Barcode (opsional)'),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: const Text('Simpan'),
-            ),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: FilledButton.icon(
+          onPressed: _saving ? null : _save,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('Simpan'),
         ),
       ),
     );
