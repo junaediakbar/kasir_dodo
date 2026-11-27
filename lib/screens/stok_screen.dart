@@ -31,7 +31,8 @@ class _StokScreenState extends State<StokScreen> {
   String _query = '';
 
   Future<List<Map<String, Object?>>> _load() async {
-    final all = await widget.repo.products(query: _query);
+    // Salin: hasil query sqflite di Android read-only, sort() langsung akan melempar.
+    final all = [...await widget.repo.products(query: _query)];
     all.sort((a, b) {
       final la = _levelOf(a).index, lb = _levelOf(b).index;
       if (la != lb) return la.compareTo(lb);
