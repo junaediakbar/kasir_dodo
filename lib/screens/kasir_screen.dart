@@ -5,6 +5,7 @@ import '../core/money.dart';
 import '../data/repo.dart';
 import '../theme.dart';
 import 'payment_screen.dart';
+import 'scan_flow.dart';
 
 class KasirScreen extends StatefulWidget {
   const KasirScreen({
@@ -86,6 +87,13 @@ class _KasirScreenState extends State<KasirScreen> {
             onChanged: (v) => setState(() => _query = v),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: ScanAiButton(
+            onPressed: () => runAiScan(context, widget.repo, widget.cart, _changed),
+          ),
+        ),
+
         Expanded(
           child: FutureBuilder<List<Map<String, Object?>>>(
             future: widget.repo.products(query: _query),
