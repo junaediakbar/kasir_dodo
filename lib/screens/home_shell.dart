@@ -42,11 +42,11 @@ class _HomeShellState extends State<HomeShell> {
       BerandaScreen(repo: repo),
       KasirScreen(repo: repo, cart: _cart, onChanged: _refresh),
       ProductsScreen(repo: repo),
-      StokScreen(repo: repo),
+      StokScreen(repo: repo, onChanged: _refresh),
       LaporanScreen(repo: repo),
     ];
     return Scaffold(
-      body: SafeArea(child: pages[_index]),
+      body: pages[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) {
@@ -54,18 +54,18 @@ class _HomeShellState extends State<HomeShell> {
           _refresh();
         },
         destinations: [
-          const NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+          const NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Beranda'),
           const NavigationDestination(icon: Icon(Icons.point_of_sale), label: 'Kasir'),
           const NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'Produk'),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: _lowCount > 0,
               label: Text('$_lowCount'),
-              child: const Icon(Icons.warehouse_outlined),
+              child: const Icon(Icons.notification_important_outlined),
             ),
             label: 'Stok',
           ),
-          const NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Laporan'),
+          const NavigationDestination(icon: Icon(Icons.analytics_outlined), label: 'Laporan'),
         ],
       ),
     );
