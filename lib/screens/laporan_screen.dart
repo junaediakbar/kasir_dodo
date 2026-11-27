@@ -158,7 +158,7 @@ class _LaporanScreenState extends State<LaporanScreen> {
               height: 8,
               child: r.omzet == 0
                   ? const ColoredBox(color: kSurfaceHigh)
-                  : Row(children: [
+                  : Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       for (final (key, _, _, color) in _methods)
                         if ((r.byMethod[key] ?? 0) > 0)
                           Expanded(

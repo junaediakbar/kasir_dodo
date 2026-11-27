@@ -31,7 +31,9 @@ class _BerandaScreenState extends State<BerandaScreen> {
     return _Home(report, low.length, store?['owner_name'] as String? ?? '');
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() => setState(() {
+        _future = _load();
+      });
 
   Future<void> _open(Widget page) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
