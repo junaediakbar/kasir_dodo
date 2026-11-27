@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/repo.dart';
 import '../data/seed_demo.dart';
+import '../theme.dart';
 
 /// Tampilan katalog kosong dengan tombol isi data contoh.
 class EmptyCatalog extends StatefulWidget {
@@ -41,13 +42,14 @@ class _EmptyCatalogState extends State<EmptyCatalog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.black38),
+            iconTile(Icons.inventory_2_outlined, size: 64),
             const SizedBox(height: 12),
             Text('Belum ada produk', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
             const Text(
               'Tambah produk di tab Produk, atau isi data contoh untuk mencoba aplikasi.',
               textAlign: TextAlign.center,
+              style: TextStyle(color: kInkSoft),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
