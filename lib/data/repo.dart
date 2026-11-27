@@ -223,6 +223,11 @@ class Repo {
     });
   }
 
+  Future<Map<String, Object?>?> saleById(int id) async {
+    final rows = await db.query('sale', where: 'id = ?', whereArgs: [id]);
+    return rows.isEmpty ? null : rows.first;
+  }
+
   Future<List<Map<String, Object?>>> sales({int limit = 100}) =>
       db.query('sale', orderBy: 'created_at DESC', limit: limit);
 

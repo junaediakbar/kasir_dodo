@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/cart.dart';
 import '../core/money.dart';
 import '../data/repo.dart';
+import 'receipt_screen.dart';
 
 /// Pembayaran. Tunai: hitung kembalian. Transfer/QRIS: dicatat manual, nominal = total.
 class PaymentScreen extends StatefulWidget {
@@ -40,25 +41,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         method: _method,
         paid: _paidAmount,
       );
-      final sale = (await widget.repo.sales(limit: 1)).first;
       if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: const Text('Transaksi selesai'),
-          content: Text(
-              '${sale['number']}\nTotal ${rp(_total)}\nKembalian ${rp(changeFor(total: _total, paid: _paidAmount))}'),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Oke'),
-            ),
-          ],
-        ),
+      // Struk langsung tampil; hasil true dikembalikan ke Kasir untuk mengosongkan keranjang.
+      Navigator.pushReplacement<void, bool>(
+        context,
+        MaterialPageRoute(builder: (_) => ReceiptScreen(repo: widget.repo, saleId: saleId)),
+        result: true,
       );
-      assert(saleId > 0);
-      if (mounted) Navigator.pop(context, true);
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

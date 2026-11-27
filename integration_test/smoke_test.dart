@@ -67,8 +67,8 @@ void main() {
     expect(find.text('Kembalian Rp 5.000'), findsOneWidget);
     await tester.tap(find.text('Selesaikan'));
     await tester.pumpAndSettle();
-    expect(find.text('Transaksi selesai'), findsOneWidget);
-    await tester.tap(find.text('Oke'));
+    expect(find.text('Bagikan struk'), findsOneWidget);
+    await tester.tap(find.text('Selesai'));
     await tester.pumpAndSettle();
 
     // Stok harus berkurang dari 10 menjadi 9
