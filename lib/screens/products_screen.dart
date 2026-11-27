@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/money.dart';
 import '../data/repo.dart';
 import '../theme.dart';
+import 'empty_catalog.dart';
 import 'product_form_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -89,7 +90,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
               builder: (context, snap) {
                 final items = snap.data ?? const [];
                 if (items.isEmpty && snap.connectionState == ConnectionState.done) {
-                  return const Center(child: Text('Belum ada produk'));
+                  if (_query.isEmpty && _categoryId == null) {
+                    return EmptyCatalog(
+                        repo: widget.repo, onSeeded: () => setState(() {}));
+                  }
+                  return const Center(child: Text('Produk tidak ditemukan'));
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 88),

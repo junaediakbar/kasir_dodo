@@ -131,6 +131,14 @@ class Repo {
       ORDER BY (stock = 0) DESC, CAST(stock AS REAL) / min_stock ASC, name
     ''');
 
+  /// Kartu stok satu produk, terbaru di atas (F-18).
+  Future<List<Map<String, Object?>>> stockLog(int productId, {int limit = 200}) =>
+      db.query('stock_log',
+          where: 'product_id = ?',
+          whereArgs: [productId],
+          orderBy: 'id DESC',
+          limit: limit);
+
   Future<int> _stockOf(DatabaseExecutor e, int productId) async {
     final rows = await e.query('product',
         columns: ['stock'], where: 'id = ?', whereArgs: [productId]);

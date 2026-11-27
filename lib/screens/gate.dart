@@ -49,6 +49,7 @@ class _GateState extends State<Gate> with WidgetsBindingObserver {
     } else if (state == AppLifecycleState.resumed && _pausedAt != null) {
       if (DateTime.now().difference(_pausedAt!) > _idleLimit) {
         setState(() => _unlocked = false);
+        _load(); // ambil PIN terbaru (bisa sudah diganti di Pengaturan)
       }
       _pausedAt = null;
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/pin.dart';
 import '../data/ai_key.dart';
 import '../data/repo.dart';
 
@@ -107,6 +108,67 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     Navigator.pop(context);
   }
 
+  /// Ganti PIN owner: cek PIN lama, simpan hash PIN baru dengan salt baru.
+  Future<void> _changePin() async {
+    final old = TextEditingController();
+    final pin = TextEditingController();
+    final pin2 = TextEditingController();
+    final form = GlobalKey<FormState>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ganti PIN'),
+        content: Form(
+          key: form,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (c, label) in [
+                (old, 'PIN lama'),
+                (pin, 'PIN baru (6 digit)'),
+                (pin2, 'Ulangi PIN baru'),
+              ])
+                TextFormField(
+                  controller: c,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: InputDecoration(labelText: label),
+                  validator: (v) {
+                    if (!RegExp(r'^\d{6}$').hasMatch(v ?? '')) return 'PIN harus 6 digit';
+                    if (c == pin2 && v != pin.text) return 'PIN tidak sama';
+                    return null;
+                  },
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          FilledButton(
+            onPressed: () {
+              if (form.currentState!.validate()) Navigator.pop(ctx, true);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    // Controller tidak di-dispose di sini: dialog masih beranimasi keluar.
+    final oldPin = old.text, newPin = pin.text;
+    if (ok != true) return;
+    final s = await widget.repo.store();
+    if (!mounted) return;
+    if (s == null || hashPin(oldPin, s['pin_salt'] as String) != s['pin_hash']) {
+      _snack('PIN lama salah. PIN tidak diganti.');
+      return;
+    }
+    final salt = newSalt();
+    await widget.repo.updateStore({'pin_salt': salt, 'pin_hash': hashPin(newPin, salt)});
+    if (!mounted) return;
+    _snack('PIN berhasil diganti');
+  }
+
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
@@ -132,6 +194,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Telepon')),
           const SizedBox(height: 8),
           TextField(controller: _footer, decoration: const InputDecoration(labelText: 'Teks footer struk')),
+          const Divider(height: 32),
+          Text('Keamanan', style: Theme.of(context).textTheme.titleMedium),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.lock_reset),
+            title: const Text('Ganti PIN'),
+            onTap: _changePin,
+          ),
           const Divider(height: 32),
           Text('Scan AI (DeepSeek)', style: Theme.of(context).textTheme.titleMedium),
           SwitchListTile(

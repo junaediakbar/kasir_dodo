@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../data/repo.dart';
 import '../theme.dart';
+import 'empty_catalog.dart';
 
 /// Stok: produk menipis/habis di atas. Ketuk untuk barang masuk atau koreksi.
 class StokScreen extends StatefulWidget {
@@ -86,7 +88,7 @@ class _StokScreenState extends State<StokScreen> {
       builder: (context, snap) {
         final items = snap.data ?? const [];
         if (items.isEmpty && snap.connectionState == ConnectionState.done) {
-          return const Center(child: Text('Belum ada produk'));
+          return EmptyCatalog(repo: widget.repo, onSeeded: () => setState(() {}));
         }
         return ListView.builder(
           padding: const EdgeInsets.all(12),
@@ -98,6 +100,16 @@ class _StokScreenState extends State<StokScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
+                leading: IconButton(
+                  tooltip: 'Kartu stok',
+                  icon: const Icon(Icons.history),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StockCardScreen(repo: widget.repo, product: p),
+                    ),
+                  ),
+                ),
                 title: Text(p['name'] as String),
                 subtitle: Text('Stok $stock ${p['unit']} · batas min $minStock'),
                 trailing: stockBadge(stock, minStock) ??
@@ -108,6 +120,61 @@ class _StokScreenState extends State<StokScreen> {
           },
         );
       },
+    );
+  }
+}
+
+/// Kartu stok satu produk: semua perubahan stok, terbaru di atas (F-18).
+class StockCardScreen extends StatelessWidget {
+  const StockCardScreen({super.key, required this.repo, required this.product});
+  final Repo repo;
+  final Map<String, Object?> product;
+
+  static const _reasons = {
+    'SALE': 'Terjual',
+    'VOID': 'Void transaksi',
+    'IN': 'Barang masuk',
+    'CORRECTION': 'Koreksi',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Kartu stok · ${product['name']}')),
+      body: FutureBuilder<List<Map<String, Object?>>>(
+        future: repo.stockLog(product['id'] as int),
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final rows = snap.data!;
+          if (rows.isEmpty) {
+            return const Center(child: Text('Belum ada perubahan stok'));
+          }
+          final fmt = DateFormat('dd/MM/yy HH:mm');
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: rows.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (_, i) {
+              final r = rows[i];
+              final delta = r['delta'] as int;
+              final t = DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int);
+              return ListTile(
+                title: Text(_reasons[r['reason']] ?? '${r['reason']}'),
+                subtitle: Text('${fmt.format(t)} · ${r['before']} → ${r['after']}'),
+                trailing: Text(
+                  delta > 0 ? '+$delta' : '$delta',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: delta > 0 ? kPrimary : kRed,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

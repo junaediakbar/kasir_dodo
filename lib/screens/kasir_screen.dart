@@ -4,6 +4,7 @@ import '../core/cart.dart';
 import '../core/money.dart';
 import '../data/repo.dart';
 import '../theme.dart';
+import 'empty_catalog.dart';
 import 'payment_screen.dart';
 import 'scan_flow.dart';
 
@@ -100,6 +101,9 @@ class _KasirScreenState extends State<KasirScreen> {
             builder: (context, snap) {
               final items = snap.data ?? const [];
               if (items.isEmpty && snap.connectionState == ConnectionState.done) {
+                if (_query.isEmpty) {
+                  return EmptyCatalog(repo: widget.repo, onSeeded: _changed);
+                }
                 return const Center(child: Text('Produk tidak ditemukan'));
               }
               return ListView.builder(
