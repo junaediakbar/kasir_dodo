@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kasir_dodo/core/cart.dart';
 import 'package:kasir_dodo/core/money.dart';
+import 'package:kasir_dodo/screens/payment_screen.dart';
 
 void main() {
   test('rp memformat ribuan dengan titik', () {
@@ -39,5 +40,13 @@ void main() {
     c.add(productId: 1, name: 'Teh', price: 5000, cost: 3500, stock: 5);
     c.setQty(1, 0);
     expect(c.isEmpty, isTrue);
+  });
+
+  test('saran uang tunai: pembulatan ke atas, di atas total, maks 3', () {
+    expect(quickCash(65000), [70000, 80000, 100000]);
+    expect(quickCash(5000), [10000, 20000, 50000]);
+    expect(quickCash(100000), isEmpty); // sudah bulat: cukup Uang pas
+    expect(quickCash(123400), [125000, 130000, 140000]);
+    expect(quickCash(0), isEmpty);
   });
 }

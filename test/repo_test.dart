@@ -80,6 +80,19 @@ void main() {
     expect(r.byMethod, {'QRIS': 5000});
   });
 
+  test('kartu stok mencatat masuk, jual, dan void (terbaru di atas)', () async {
+    final id = await teh(stock: 10);
+    await repo.adjustStock(id, 20, reason: 'IN');
+    final saleId = await repo.checkout(
+        lines: [line(id, 3)], method: 'CASH', paid: 15000);
+    await repo.voidSale(saleId);
+    final log = await repo.stockLog(id);
+    expect(log.map((e) => e['reason']), ['VOID', 'SALE', 'IN', 'IN']);
+    expect(log.map((e) => e['delta']), [3, -3, 20, 10]);
+    expect(log.first['after'], 30);
+    expect(await repo.stockLog(id + 99), isEmpty);
+  });
+
   test('stok menipis diurutkan dari yang habis', () async {
     await teh(stock: 5); // stok <= min 5
     await repo.addProduct(name: 'Gula', categoryId: null, sellPrice: 1,

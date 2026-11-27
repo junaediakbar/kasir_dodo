@@ -35,8 +35,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Kunci PIN -> buka
-    await tester.enterText(find.byType(TextField).first, '123456');
-    await tester.tap(find.text('Buka'));
+    for (final d in '123456'.split('')) {
+      await tester.tap(find.text(d)); // keypad, terbuka otomatis di digit ke-6
+      await tester.pump();
+    }
     await tester.pumpAndSettle();
     expect(find.text('Kasir'), findsWidgets);
 
@@ -47,9 +49,9 @@ void main() {
     await tester.pumpAndSettle();
     final pf = find.byType(TextFormField);
     await tester.enterText(pf.at(0), 'Teh Botol');
-    await tester.enterText(pf.at(1), '5000');
-    await tester.enterText(pf.at(2), '3500');
-    await tester.enterText(pf.at(5), '10');
+    await tester.enterText(pf.at(3), '5000'); // harga jual
+    await tester.enterText(pf.at(2), '3500'); // modal
+    await tester.enterText(pf.at(5), '10'); // stok awal
     await tester.tap(find.text('Simpan'));
     await tester.pumpAndSettle();
     expect(find.text('Teh Botol'), findsOneWidget);
@@ -59,7 +61,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Teh Botol'));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Bayar Rp 5.000'));
+    expect(find.text('Rp 5.000'), findsWidgets); // total di panel keranjang
+    await tester.tap(find.text('BAYAR SEKARANG'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, '10000');
