@@ -7,15 +7,20 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 void main() {
   setUpAll(sqfliteFfiInit);
 
-  test('seed mengisi produk contoh dan tidak menggandakan saat dijalankan ulang', () async {
+  test('seed mengisi katalog, memperbarui nilai lama, dan tidak menggandakan', () async {
     final db = await openAppDb(databaseFactoryFfi, inMemoryDatabasePath);
     final repo = Repo(db);
     addTearDown(db.close);
 
     expect(await seedDemo(repo), 7);
     expect(await seedDemo(repo), 0);
-    expect((await repo.products()).length, 7);
+    final all = await repo.products();
+    expect(all.length, 7);
     expect((await repo.categories()).length, 4);
+
+    final bimoli = all.firstWhere((p) => p['name'] == 'Minyak Goreng Bimoli 1L Pouch');
+    expect(bimoli['stock'], 18);
+    expect(bimoli['cost_price'], 16500);
     expect((await repo.lowStock()).map((e) => e['name']),
         contains('Gula Pasir Gulaku 1kg'));
   });
