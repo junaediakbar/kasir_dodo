@@ -35,8 +35,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Kunci PIN -> buka
-    await tester.enterText(find.byType(TextField).first, '123456');
-    await tester.tap(find.text('Buka'));
+    for (final d in '123456'.split('')) {
+      await tester.tap(find.text(d)); // keypad, terbuka otomatis di digit ke-6
+      await tester.pump();
+    }
     await tester.pumpAndSettle();
     expect(find.text('Kasir'), findsWidgets);
 
